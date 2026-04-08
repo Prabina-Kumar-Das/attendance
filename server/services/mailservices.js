@@ -1,22 +1,20 @@
 const nodemailer = require("nodemailer")
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.APP_EMAIL,
-    pass: process.env.APP_EMAIL_PASS
-
-  }
-})
-
-
 const sendMailServices = async (to, subject, empname) => {
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.APP_EMAIL,
+      pass: process.env.APP_EMAIL_PASS
+    }
+  })
 
   console.log("DEBUG EMAIL:", process.env.APP_EMAIL);
   console.log("DEBUG PASS:", process.env.APP_EMAIL_PASS ? "Password Loaded" : "Password MISSING");
 
   const mailOptions = {
-    from: "prabindas4423@gmail.com",
+    from: process.env.APP_EMAIL,
     to,
     subject,
     html: `<!DOCTYPE html>
@@ -95,13 +93,9 @@ const sendMailServices = async (to, subject, empname) => {
 `
   }
 
-  try {
-    const result = await transporter.sendMail(mailOptions)
-    console.log("Mail send sucessfully");
-    
-  } catch (error) {
-    console.log("Failed to send Mail" + error.message);
-  }
+  const result = await transporter.sendMail(mailOptions)
+  console.log("✅ Registration mail sent to:", to);
+  return result;
 }
 
 module.exports = sendMailServices

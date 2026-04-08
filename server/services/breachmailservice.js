@@ -1,22 +1,14 @@
 const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.APP_EMAIL,
-    pass: process.env.APP_EMAIL_PASS,
-  },
-});
-
-/**
- * Sends a geofence breach security alert email with OTP.
- * @param {string} to - employee email
- * @param {string} empName - employee name
- * @param {string} otp - the one-time password
- * @param {number} lat - breach latitude
- * @param {number} lng - breach longitude
- */
 const sendBreachAlertEmail = async (to, empName, otp, lat, lng) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.APP_EMAIL,
+      pass: process.env.APP_EMAIL_PASS,
+    },
+  });
+
   const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
   const timestamp = new Date().toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -112,12 +104,9 @@ const sendBreachAlertEmail = async (to, empName, otp, lat, lng) => {
 </html>`,
   };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`[BREACH EMAIL] Security alert sent to ${to} for ${empName}`);
-  } catch (error) {
-    console.error(`[BREACH EMAIL] Failed to send to ${to}:`, error.message);
-  }
+  const result = await transporter.sendMail(mailOptions);
+  console.log(`✅ [BREACH EMAIL] Security alert sent to ${to} for ${empName}`);
+  return result;
 };
 
 module.exports = sendBreachAlertEmail;

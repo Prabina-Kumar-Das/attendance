@@ -1,14 +1,16 @@
 const nodemailer = require("nodemailer")
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.APP_EMAIL,
-    pass: process.env.APP_EMAIL_PASS
-  }
-})
-
 const sendOTPServices = async (to, subject, otp) => {
+
+  // Create transporter here so env vars are guaranteed to be loaded
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.APP_EMAIL,
+      pass: process.env.APP_EMAIL_PASS
+    }
+  })
+
   const mailOptions = {
     from: process.env.APP_EMAIL,
     to,
@@ -62,7 +64,7 @@ const sendOTPServices = async (to, subject, otp) => {
       <!-- Footer -->
       <tr>
         <td style="background:#f9fafb; text-align:center; padding:15px; font-size:12px; color:#888;">
-          If you didn’t request this, you can ignore this email.
+          If you didn't request this, you can ignore this email.
         </td>
       </tr>
 
@@ -78,13 +80,11 @@ const sendOTPServices = async (to, subject, otp) => {
 </html>
 `
   }
-  try {
-    const result = await transporter.sendMail(mailOptions)
-    console.log("OTP send Sucessfully.");
-    
-  } catch (error) {
-    console.log("Failed to send OTP");
-  }
+
+  // Let errors bubble up so the caller's .catch(console.error) logs them in Render
+  const result = await transporter.sendMail(mailOptions)
+  console.log("✅ OTP email sent to:", to);
+  return result;
 }
 
-module.exports = sendOTPServices
+module.exports = sendOTPServices
