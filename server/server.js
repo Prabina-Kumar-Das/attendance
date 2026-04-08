@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt")
 const sendMailServices = require("./services/mailservices")
 const passwordValidation = require("./utils/passwordValidation")
 const otpService = require("./utils/otpGeneration")
-const sendOTPServices = require("./services/otpservices")
+const sendOTPServices = require("./services/otpServices")
 const otpModel = require("./models/otpSchema")
 const geofenceModel = require("./models/geofenceSchema")
 const alertModel = require("./models/alertSchema")
@@ -24,6 +24,9 @@ console.log(process.env.APP_EMAIL);
 
 
 connectDB()
+
+// Health check for Render
+app.get("/", (req, res) => res.status(200).json({ status: "ok" }));
 
 app.post("/register", async (req, res) => {
 
