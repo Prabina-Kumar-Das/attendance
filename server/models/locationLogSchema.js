@@ -8,7 +8,7 @@ const locationLogSchema = new mongoose.Schema(
     userRole: { type: String },
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
-    status: { type: String, enum: ["Inside", "Outside"], required: true },
+    status: { type: String, enum: ["Inside", "Outside", "On Leave", "WFH"], required: true },
     punchInTime: { type: String }, 
     punchInLocation: { type: String }
   },
