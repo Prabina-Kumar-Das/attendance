@@ -15,9 +15,11 @@ const updateRequestModel = require("./models/updateRequestSchema")
 const leaveRequestModel = require("./models/leaveRequestSchema")
 const sendBreachAlertEmail = require("./services/breachmailservice")
 const cors = require("cors")
+const compression = require("compression")
 const app = express()
+app.use(compression()) // gzip all responses
 app.use(express.json())
-app.use(cors())
+app.use(cors({ origin: "*" }))
 
 console.log(process.env.APP_EMAIL);
 
