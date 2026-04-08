@@ -42,7 +42,7 @@ app.post("/register", async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(employee.password, 6)
 
-   const data =  await allEmployeeModel.insertOne({...employee, password:hashedPassword})
+    const data = await allEmployeeModel.create({ ...employee, password: hashedPassword });
     res.status(201).json({message: "Account  Created"})
     console.log(data);
     sendMailServices(employee.email, "Registration Sucessfully", employee.name).catch(console.error);
@@ -76,7 +76,7 @@ app.post("/login", async (req, res) => {
 
     const hashedOTP = await bcrypt.hash(OTP, 6)
 
-    await otpModel.insertOne({otp: hashedOTP, userId: employee._id})
+    await otpModel.create({otp: hashedOTP, userId: employee._id})
 
     res.status(200).json({message: "OTP send Sucessfully."})
 
@@ -668,6 +668,15 @@ app.put("/api/admin/leave-requests/:id/reject", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
-})
+});
+
+// Handle graceful shutdown and errors
+process.on("unhandledRejection", (err) => {
+  console.error("CRITICAL: Unhandled Rejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("CRITICAL: Uncaught Exception:", err);
+});

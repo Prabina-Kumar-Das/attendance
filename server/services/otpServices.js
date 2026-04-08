@@ -8,8 +8,10 @@ const sendOTPServices = async (to, subject, otp) => {
   }
 
   console.log(`📧 Attempting to send OTP to: ${to} using Resend...`);
+  const apiKey = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.trim() : "";
+  console.log(`🔑 Key check: ${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 4)} (Length: ${apiKey.length})`);
 
-  const resend = new Resend(process.env.RESEND_API_KEY.trim());
+  const resend = new Resend(apiKey);
 
   try {
     const { data, error } = await resend.emails.send({
