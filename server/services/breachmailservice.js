@@ -1,13 +1,7 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
 const sendBreachAlertEmail = async (to, empName, otp, lat, lng) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.APP_EMAIL,
-      pass: process.env.APP_EMAIL_PASS,
-    },
-  });
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
   const timestamp = new Date().toLocaleString("en-IN", {
@@ -102,11 +96,20 @@ const sendBreachAlertEmail = async (to, empName, otp, lat, lng) => {
   </table>
 </body>
 </html>`,
-  };
+  const { data, error } = await resend.emails.send({
+    from: "SecureTrack Security <onboarding@resend.dev>",
+    to,
+    subject: `🚨 URGENT: Geofence Breach Alert — ${empName}`,
+    html: mailOptions.html,
+  });
 
-  const result = await transporter.sendMail(mailOptions);
-  console.log(`✅ [BREACH EMAIL] Security alert sent to ${to} for ${empName}`);
-  return result;
+  if (error) {
+    console.error("❌ Breach email error:", error);
+    throw error;
+  }
+
+  console.log(`✅ [BREACH EMAIL] Security alert sent to ${to} for ${empName} | ID:`, data.id);
+  return data;
 };
 
 module.exports = sendBreachAlertEmail;
