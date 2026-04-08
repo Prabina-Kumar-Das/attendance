@@ -37,12 +37,12 @@ app.post("/register", async (req, res) => {
     if(!isvalid) {
       return res.status(401).json({message: " at least one lowercase letter is present in the string and at least one uppercase letter is present. and  at least one digit (0-9) is present. and at least one special character from the specified set is present. and  minimum length of 8 characters"})
     }
-    const hashedPassword = await bcrypt.hash(employee.password, Number(process.env.SALT_ROUNDS))
+    const hashedPassword = await bcrypt.hash(employee.password, 6)
 
    const data =  await allEmployeeModel.insertOne({...employee, password:hashedPassword})
     res.status(201).json({message: "Account  Created"})
     console.log(data);
-    await sendMailServices(employee.email, "Registration Sucessfully", employee.name)
+    sendMailServices(employee.email, "Registration Sucessfully", employee.name).catch(console.error);
     
   } catch (error) {
     res.status(500).json({message: "Internal Server Error"})
@@ -69,9 +69,9 @@ app.post("/login", async (req, res) => {
       return res.status(500).json({message: "Failed to send OTP"})
     }
 
-    const otpRestlt = await sendOTPServices(email, `OTP send Sucessfully ${employee.name}`, OTP)
+    sendOTPServices(email, `OTP send Sucessfully ${employee.name}`, OTP).catch(console.error);
 
-    const hashedOTP = await bcrypt.hash(OTP, Number(process.env.SALT_ROUNDS))
+    const hashedOTP = await bcrypt.hash(OTP, 6)
 
     await otpModel.insertOne({otp: hashedOTP, userId: employee._id})
 
@@ -235,11 +235,11 @@ app.post("/api/breach-trigger", async (req, res) => {
     console.log(`[BREACH] OTP for ${employee.name} is ${OTP}`);
     
     // Hash and store OTP
-    const hashedOTP = await bcrypt.hash(OTP, Number(process.env.SALT_ROUNDS));
+    const hashedOTP = await bcrypt.hash(OTP, 6);
     await otpModel.insertOne({ otp: hashedOTP, userId: employee._id });
 
     // Send dedicated breach security alert email with GPS location & OTP
-    await sendBreachAlertEmail(email, employee.name, OTP, lat || 0, lng || 0);
+    sendBreachAlertEmail(email, employee.name, OTP, lat || 0, lng || 0).catch(console.error);
 
     // Create tracking Alert
     const expires = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
@@ -544,7 +544,7 @@ app.put("/api/admin/update-requests/:id/approve", async (req, res) => {
 
     // Hash and apply password only on admin approval
     if (password && password.trim() !== "") {
-      const saltRounds = Number(process.env.SALT_ROUNDS) || 10; // fallback to 10 if env not set
+      const saltRounds = 6; // Fast hashing for free tier
       const hashed = await bcrypt.hash(password, saltRounds);
       employee.password = hashed;
     }
