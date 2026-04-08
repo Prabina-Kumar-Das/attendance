@@ -1,46 +1,47 @@
-const { Resend } = require("resend");
+const axios = require("axios");
 
 const sendOTPServices = async (to, subject, otp) => {
-  // Debug: verify key loading
-  if (!process.env.RESEND_API_KEY) {
-     console.error("❌ RESEND_API_KEY is missing from environment variables!");
-     throw new Error("RESEND_API_KEY is missing");
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.APP_EMAIL; // Use the email verified in Brevo
+
+  if (!apiKey) {
+    console.error("❌ BREVO_API_KEY is missing!");
+    return { success: false, error: "API Key missing" };
   }
 
-  console.log(`📧 Attempting to send OTP to: ${to} using Resend...`);
-  const apiKey = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.trim() : "";
-  console.log(`🔑 Key check: ${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 4)} (Length: ${apiKey.length})`);
-
-  const resend = new Resend(apiKey);
+  console.log(`📧 Attempting to send OTP to: ${to} using Brevo...`);
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Attendance System <onboarding@resend.dev>",
-      to: to.trim(),
-      subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-          <h2 style="color: #4f46e5;">Verification OTP</h2>
-          <p>Hello,</p>
-          <p>Your One-Time Password (OTP) for login is:</p>
-          <div style="font-size: 24px; font-weight: bold; background: #f3f4f6; padding: 10px; display: inline-block; border-radius: 5px; color: #111827;">
-            ${otp}
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { name: "SecureTrack Attendance", email: senderEmail },
+        to: [{ email: to.trim() }],
+        subject: subject,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #4f46e5;">Verification OTP</h2>
+            <p>Hello,</p>
+            <p>Your One-Time Password (OTP) for login is:</p>
+            <div style="font-size: 32px; font-weight: bold; background: #f3f4f6; padding: 15px; display: inline-block; border-radius: 5px; color: #111827; letter-spacing: 5px;">
+              ${otp}
+            </div>
+            <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">This OTP is valid for 5 minutes. Do not share it with anyone.</p>
           </div>
-          <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">This OTP is valid for 5 minutes. Do not share it with anyone.</p>
-        </div>
-      `
-    });
+        `,
+      },
+      {
+        headers: {
+          "api-key": apiKey.trim(),
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    if (error) {
-      console.error("❌ Resend API Error:", JSON.stringify(error, null, 2));
-      return { success: false, error };
-    }
-
-    console.log("✅ OTP email sent successfully. ID:", data.id);
-    return { success: true, data };
-    
+    console.log("✅ Brevo OTP email sent successfully. MessageId:", response.data.messageId);
+    return { success: true, data: response.data };
   } catch (err) {
-    console.error("❌ Resend Network/Execution Error:", err.message);
+    console.error("❌ Brevo API Error:", err.response ? err.response.data : err.message);
     return { success: false, error: err.message };
   }
 };
