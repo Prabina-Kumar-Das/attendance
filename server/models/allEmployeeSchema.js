@@ -9,8 +9,9 @@ const allEmployeeSchema = new mongoose.Schema(
     role: String,
     contact: Number,
     theme: { type: String, default: 'light' }
-  }
-)
+  },
+  { timestamps: true }
+);
 
 const allEmployeeModel = mongoose.model("employees", allEmployeeSchema)
 

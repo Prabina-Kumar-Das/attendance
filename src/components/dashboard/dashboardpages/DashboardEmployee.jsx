@@ -54,8 +54,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const DashboardEmployee = () => {
   // Geofence config
-  const [masterGeofence, setMasterGeofence] = useState({ lat: 20.2961, lng: 85.8245, radius: 200, name: "Master Campus" });
-  const geofenceRef = useRef({ lat: 20.2961, lng: 85.8245, radius: 200 });
+  const [masterGeofence, setMasterGeofence] = useState({ lat: 20.3401499781858, lng: 85.80771980170387, radius: 200, name: "Master Campus" });
+  const geofenceRef = useRef({ lat: 20.3401499781858, lng: 85.80771980170387, radius: 200 });
 
   // Load user from localStorage - also set ref immediately (not just in useEffect)
   const storedUserRaw = localStorage.getItem("user");
@@ -63,7 +63,7 @@ const DashboardEmployee = () => {
   const [currentUser, setCurrentUser] = useState(storedUser || { name: "Employee", email: "", role: "" });
   const userEmailRef = useRef(storedUser?.email || "");
   // Geolocation and Geofence State
-  const [userLocation, setUserLocation] = useState({ lat: 20.2961, lng: 85.8245 });
+  const [userLocation, setUserLocation] = useState({ lat: 20.3401499781858, lng: 85.80771980170387 });
   const [isInside, setIsInside] = useState(true);
   const isInsideRef = useRef(true);
   const [distanceFromCenter, setDistanceFromCenter] = useState(0);

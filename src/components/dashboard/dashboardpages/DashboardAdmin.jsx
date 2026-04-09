@@ -7,7 +7,7 @@ import {
   Search, Filter, Server, Activity, ChevronDown, LogOut,
   User, Eye, Check, X, Clock, MapPin, Wifi, RefreshCw,
   AlertTriangle, CheckCircle, TrendingUp, Smartphone, Plus, Trash2, Calendar,
-  Shield, ShieldCheck, Quote
+  Shield, ShieldCheck, Quote, CalendarDays, BarChart3
 } from "lucide-react";
 import axios from "axios";
 import API_BASE from "../../../config/api";
@@ -36,6 +36,7 @@ const NAV_ITEMS = [
   { key: "alerts",          label: "Alerts",          Icon: Bell            },
   { key: "updaterequests",  label: "Update Requests", Icon: CheckCircle     },
   { key: "leaverequests",   label: "Leave Requests",  Icon: Calendar        },
+  { key: "attendance",      label: "Attendance Report", Icon: BarChart3      },
   { key: "settings",        label: "Settings",        Icon: Settings        },
 ];
 
@@ -116,9 +117,11 @@ const DashboardAdmin = () => {
   
   // Geofence Modal
   const [showGeofenceModal, setShowGeofenceModal] = useState(false);
-  const [editGeofence, setEditGeofence] = useState({ name: "", lat: 20.2961, lng: 85.8245, radius: 200, color: "#3b82f6", description: "" });
+  const [editGeofence, setEditGeofence] = useState({ name: "", lat: 20.3401499781858, lng: 85.80771980170387, radius: 200, color: "#3b82f6", description: "" });
 
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [attendanceReport, setAttendanceReport] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
 
   // Core Data Fetching
   const fetchGeofences = async () => {
@@ -156,6 +159,18 @@ const DashboardAdmin = () => {
     } catch (e) { console.error("Failed to fetch stats:", e); }
   };
 
+  const fetchAttendanceReport = async () => {
+    setAttendanceLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/api/admin/attendance-report`);
+      setAttendanceReport(res.data);
+    } catch (e) { 
+      console.error("Failed to fetch attendance report:", e); 
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
   const fetchUpdateReqs = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/admin/update-requests`);
@@ -184,13 +199,13 @@ const DashboardAdmin = () => {
     fetchLeaveReqs();
     const id = setInterval(() => {
       fetchEmployeesLive();
-      fetchAlerts();
-      fetchStats();
-      fetchUpdateReqs();
-      fetchLeaveReqs();
+      if (activeNav === "alerts") fetchAlerts();
+      if (activeNav === "updaterequests") fetchUpdateReqs();
+      if (activeNav === "leaverequests") fetchLeaveReqs();
+      if (activeNav === "attendance") fetchAttendanceReport();
     }, 5000);
     return () => clearInterval(id);
-  }, []);
+  }, [activeNav]);
 
   // Clock
   useEffect(() => {
@@ -706,6 +721,122 @@ const DashboardAdmin = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ATTENDANCE REPORT VIEW */}
+          {activeNav === "attendance" && (
+            <div className="space-y-6 animate-in fade-in duration-500">
+              <div className="premium-card !p-0 overflow-hidden min-h-[500px]">
+                <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+                  <div>
+                    <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                       <BarChart3 size={18} className="text-blue-500" />
+                       Monthly Attendance Matrix
+                    </h2>
+                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mt-1">Cross-referencing Location Logs vs Approved Leaves (Excl. Weekends)</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                     <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full uppercase tabular-nums">
+                        {new Date().toLocaleString('default', { month: 'long' })} {new Date().getFullYear()}
+                     </span>
+                     <button onClick={fetchAttendanceReport} className="p-2 hover:bg-gray-200 dark:hover:bg-slate-800 rounded-lg transition-colors text-gray-400">
+                        <RefreshCw size={14} className={attendanceLoading ? "animate-spin" : ""} />
+                     </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/30">
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Personnel</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Monthly Status Bar (Mon-Fri)</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">P / A / L</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">Efficiency</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+                      {attendanceReport.length === 0 && !attendanceLoading && (
+                        <tr>
+                          <td colSpan="4" className="py-20 text-center">
+                            <CalendarDays size={40} className="mx-auto text-gray-200 dark:text-slate-800 mb-4" />
+                            <p className="text-xs font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">No attendance data collected for this cycle</p>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {attendanceReport.map((row) => {
+                        const score = row.stats.totalWorking > 0 ? (row.stats.present / row.stats.totalWorking) : 0;
+                        return (
+                          <tr key={row.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-900/30 transition-colors group">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xs border border-indigo-200/50 dark:border-slate-700 shadow-sm">
+                                  {row.name[0]}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-black text-gray-800 dark:text-white uppercase truncate max-w-[140px] tracking-tight">{row.name}</p>
+                                  <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase truncate">{row.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-2.5">
+                                <div className="flex gap-0.5 h-2 w-full max-w-[280px] rounded-full overflow-hidden bg-gray-100 dark:bg-slate-800 shadow-inner">
+                                  {row.history.map((day, idx) => (
+                                    <div 
+                                      key={idx} 
+                                      title={`Day ${day.day}: ${day.status.toUpperCase()} (Mon-Fri)`}
+                                      className={`flex-1 transition-all hover:scale-y-125 hover:z-10 cursor-help ${
+                                        day.status === "present" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : 
+                                        day.status === "leave" ? "bg-amber-400" : 
+                                        "bg-red-500/90"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex gap-2 text-[9px] font-black uppercase tracking-tighter">
+                                    <span className="text-emerald-500 flex items-center gap-1"><span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"/> {row.stats.present} PRESENT</span>
+                                    <span className="text-red-500/80 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"/> {row.stats.absent} ABSENT</span>
+                                    <span className="text-amber-500 flex items-center gap-1"><span className="w-1 h-1 bg-amber-500 rounded-full"/> {row.stats.leave} LEAVE</span>
+                                  </div>
+                                  {row.absentDetails && row.absentDetails.length > 0 && (
+                                    <span className="text-[8px] font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase">
+                                      Missed: {row.absentDetails.slice(0, 3).join(', ')}{row.absentDetails.length > 3 ? '...' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="flex items-center justify-center gap-1 text-[11px] font-black tabular-nums tracking-tighter">
+                                <span className="text-emerald-600 dark:text-emerald-400">{row.stats.present}</span>
+                                <span className="text-gray-300 dark:text-slate-800 font-light">/</span>
+                                <span className="text-red-500">{row.stats.absent}</span>
+                                <span className="text-gray-300 dark:text-slate-800 font-light">/</span>
+                                <span className="text-amber-500">{row.stats.leave}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="inline-flex items-center justify-center p-1 rounded-full bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800">
+                                <div className={`text-[10px] font-black w-10 h-10 rounded-full flex items-center justify-center shadow-sm border ${
+                                  score > 0.8 ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30" :
+                                  score > 0.5 ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30" :
+                                  "bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"
+                                }`}>
+                                  {row.stats.totalWorking > 0 ? Math.round(score * 100) : 0}%
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

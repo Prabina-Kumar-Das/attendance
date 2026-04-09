@@ -142,8 +142,8 @@ app.get("/geofence", async (req, res) => {
       // Create default if it doesn't exist
       geofence = await geofenceModel.create({
         name: "Master",
-        lat: 20.2961,
-        lng: 85.8245,
+        lat: 20.3401499781858,
+        lng: 85.80771980170387,
         radius: 200
       });
     }
@@ -661,6 +661,104 @@ app.put("/api/admin/leave-requests/:id/reject", async (req, res) => {
     await request.save();
 
     res.status(200).json({ message: "Request rejected" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+// 9. Attendance Report Aggregation
+app.get("/api/admin/attendance-report", async (req, res) => {
+  try {
+    const month = parseInt(req.query.month) || new Date().getMonth(); // 0-indexed
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+
+    const employees = await allEmployeeModel.find({});
+    
+    // Get all days in month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const workingDays = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const dayOfWeek = date.getDay(); // 0=Sun, 6=Sat
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workingDays.push(d);
+      }
+    }
+
+    // Fetch logs and leaves for the month
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month, daysInMonth, 23, 59, 59);
+
+    const logs = await locationLogModel.find({
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    const leaves = await leaveRequestModel.find({
+      status: "Approved",
+      $or: [
+        { startDate: { $lte: endOfMonth.toISOString() }, endDate: { $gte: startOfMonth.toISOString() } }
+      ]
+    });
+
+    const report = employees.map(emp => {
+      const empLogs = logs.filter(l => l.userEmail === emp.email);
+      const empLeaves = leaves.filter(l => l.userEmail === emp.email);
+
+      const presentDates = [];
+      const leaveDates = [];
+      const absentDates = [];
+
+      workingDays.forEach(day => {
+        const currentDate = new Date(year, month, day);
+        const dateStr = currentDate.toISOString().split('T')[0];
+
+        // Check if present
+        const isPresent = empLogs.some(l => {
+          const logDate = new Date(l.createdAt).toISOString().split('T')[0];
+          return logDate === dateStr;
+        });
+
+        if (isPresent) {
+          presentDates.push(day);
+          return;
+        }
+
+        // Check if on leave
+        const isOnLeave = empLeaves.some(l => {
+          const start = new Date(l.startDate).toISOString().split('T')[0];
+          const end = new Date(l.endDate).toISOString().split('T')[0];
+          return dateStr >= start && dateStr <= end;
+        });
+
+        if (isOnLeave) {
+          leaveDates.push(day);
+          return;
+        }
+
+        absentDates.push(day);
+      });
+
+      return {
+        id: emp._id,
+        name: emp.name,
+        email: emp.email,
+        role: emp.role,
+        stats: {
+          present: presentDates.length,
+          absent: absentDates.length,
+          leave: leaveDates.length,
+          totalWorking: workingDays.length
+        },
+        history: workingDays.map(day => ({
+          day,
+          status: presentDates.includes(day) ? "present" : leaveDates.includes(day) ? "leave" : "absent"
+        })),
+        absentDetails: absentDates
+      };
+    });
+
+    res.status(200).json(report);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
