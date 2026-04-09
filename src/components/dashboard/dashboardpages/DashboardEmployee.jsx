@@ -736,13 +736,20 @@ const DashboardEmployee = () => {
               <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-4">No recent history</p>
             ) : (
               <div className="space-y-4">
-                {leaveRequests.slice(0, 3).map(req => (
+                {leaveRequests.slice(0, 5).map(req => (
                   <div key={req._id} className="bg-gray-50/50 dark:bg-slate-800/30 border border-gray-100 dark:border-slate-800 p-3 rounded-xl transition-all hover:border-blue-200 dark:hover:border-blue-900/30">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-[11px] font-black text-gray-800 dark:text-gray-200 uppercase tracking-tight">{req.requestType}</span>
                       <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${req.status === "Pending" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : req.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>{req.status}</span>
                     </div>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold tabular-nums italic">{new Date(req.startDate).toLocaleDateString()} — {new Date(req.endDate).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold tabular-nums italic mb-2">{new Date(req.startDate).toLocaleDateString()} — {new Date(req.endDate).toLocaleDateString()}</p>
+                    
+                    {req.adminNote && (
+                      <div className="mt-2 pl-2 border-l-2 border-slate-200 dark:border-slate-700">
+                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.1em] mb-0.5">Admin Note</p>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">"{req.adminNote}"</p>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {leaveRequests.length > 3 && <p className="text-[10px] text-blue-500 dark:text-blue-400 text-center font-black uppercase tracking-widest pt-1 cursor-pointer hover:underline">View All Requests (+{leaveRequests.length - 3})</p>}

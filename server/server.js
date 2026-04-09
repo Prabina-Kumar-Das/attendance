@@ -4,7 +4,7 @@ const express = require("express")
 const connectDB = require("./config/db")
 const allEmployeeModel = require("./models/allEmployeeSchema")
 const bcrypt = require("bcrypt")
-const sendMailServices = require("./services/mailservices")
+const { sendMailServices, sendLeaveStatusEmail } = require("./services/mailservices")
 const passwordValidation = require("./utils/passwordValidation")
 const otpService = require("./utils/otpGeneration")
 const sendOTPServices = require("./services/otpServices")
@@ -594,6 +594,9 @@ app.post("/api/leave-request", async (req, res) => {
     const employee = await allEmployeeModel.findOne({ email });
     if (!employee) return res.status(404).json({ message: "User not found" });
 
+    // Remove previous leave requests for this specific employee
+    await leaveRequestModel.deleteMany({ userId: employee._id });
+
     const newReq = await leaveRequestModel.create({
       userId: employee._id,
       userName: employee.name,
@@ -643,6 +646,9 @@ app.put("/api/admin/leave-requests/:id/approve", async (req, res) => {
     request.adminNote = req.body?.note || "Approved by Admin";
     await request.save();
 
+    // Notify employee via email
+    sendLeaveStatusEmail(request.userEmail, request.userName, "Approved", request.adminNote).catch(console.error);
+
     res.status(200).json({ message: "Request approved successfully" });
   } catch (error) {
     console.error(error);
@@ -659,6 +665,9 @@ app.put("/api/admin/leave-requests/:id/reject", async (req, res) => {
     request.status = "Rejected";
     request.adminNote = req.body?.note || "Rejected by Admin";
     await request.save();
+
+    // Notify employee via email
+    sendLeaveStatusEmail(request.userEmail, request.userName, "Rejected", request.adminNote).catch(console.error);
 
     res.status(200).json({ message: "Request rejected" });
   } catch (error) {

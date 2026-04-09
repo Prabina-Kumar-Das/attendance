@@ -123,6 +123,9 @@ const DashboardAdmin = () => {
   const [attendanceReport, setAttendanceReport] = useState([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
 
+  // Leave Status Modal State
+  const [statusModal, setStatusModal] = useState({ show: false, req: null, type: "", note: "" });
+
   // Core Data Fetching
   const fetchGeofences = async () => {
     try {
@@ -183,6 +186,29 @@ const DashboardAdmin = () => {
       const res = await axios.get(`${API_BASE}/api/admin/leave-requests`);
       setLeaveRequests(res.data);
     } catch (e) { console.error("Failed to fetch leave requests:", e); }
+  };
+
+  const handleUpdateLeaveStatus = (req, type) => {
+    setStatusModal({ 
+      show: true, 
+      req, 
+      type, 
+      note: type === "Approved" ? "Enjoy your leave!" : "I am unable to grant you leave because..." 
+    });
+  };
+
+  const onConfirmStatus = async () => {
+    const { req, type, note } = statusModal;
+    const action = type === "Approved" ? "approve" : "reject";
+
+    try {
+      await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/${action}`, { note });
+      setStatusModal({ show: false, req: null, type: "", note: "" });
+      fetchLeaveReqs();
+    } catch (e) {
+      console.error(`Failed to ${action} leave request:`, e);
+      alert(`Failed to ${action} leave request.`);
+    }
   };
 
   // Initial and Polling setup
@@ -670,8 +696,8 @@ const DashboardAdmin = () => {
                       
                       {req.status === "Pending" && (
                         <div className="flex md:flex-col gap-2 w-full md:w-auto">
-                          <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/approve`); fetchLeaveReqs(); }} className="flex-1 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-xl uppercase tracking-[0.1em] shadow-lg shadow-green-600/20 transition-all active:scale-95">Verify & Approve</button>
-                          <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/reject`); fetchLeaveReqs(); }} className="flex-1 px-6 py-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-black rounded-xl uppercase tracking-widest transition-all">Decline</button>
+                          <button onClick={() => handleUpdateLeaveStatus(req, "Approved")} className="flex-1 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-xl uppercase tracking-[0.1em] shadow-lg shadow-green-600/20 transition-all active:scale-95">Verify & Approve</button>
+                          <button onClick={() => handleUpdateLeaveStatus(req, "Rejected")} className="flex-1 px-6 py-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-black rounded-xl uppercase tracking-widest transition-all">Decline</button>
                         </div>
                       )}
                     </div>
@@ -720,6 +746,59 @@ const DashboardAdmin = () => {
                         <span className="flex items-center gap-1"><span className="w-1 h-1 bg-blue-400 rounded-full" /> OPERATIONAL</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STATUS MODAL (Approve/Reject Note) */}
+          {statusModal.show && (
+            <div className="fixed inset-0 flex items-center justify-center z-[100] px-4">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setStatusModal({ show: false, req: null, type: "", note: "" })} />
+              <div className="relative premium-card w-full max-w-lg border-white/20 dark:border-slate-800/60 shadow-2xl z-10 p-8">
+                <div className="mb-6">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${statusModal.type === "Approved" ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"}`}>
+                    {statusModal.type === "Approved" ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
+                  </div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                    {statusModal.type} Leave Request
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                    Provide a message for <span className="text-gray-800 dark:text-gray-200 font-bold">{statusModal.req?.userName}</span>. This will be sent via email.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Your Message / Feedback</label>
+                    <textarea
+                      rows={4}
+                      value={statusModal.note}
+                      onChange={(e) => setStatusModal(prev => ({ ...prev, note: e.target.value }))}
+                      placeholder={statusModal.type === "Approved" ? "Optional: Wish them well..." : "Provide a reason for rejection (Required)..."}
+                      className="w-full bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none font-medium"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => setStatusModal({ show: false, req: null, type: "", note: "" })}
+                      className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-black text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 uppercase tracking-widest"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={onConfirmStatus}
+                      disabled={statusModal.type === "Rejected" && !statusModal.note.trim()}
+                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                        statusModal.type === "Approved" 
+                          ? "bg-green-600 hover:bg-green-700 shadow-green-600/20 text-white" 
+                          : "bg-red-600 hover:bg-red-700 shadow-red-600/20 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      }`}
+                    >
+                      Confirm {statusModal.type}
+                    </button>
                   </div>
                 </div>
               </div>
