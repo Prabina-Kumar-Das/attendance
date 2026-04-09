@@ -722,18 +722,7 @@ app.get("/api/admin/attendance-report", async (req, res) => {
         const currentDate = new Date(year, month, day);
         const dateStr = currentDate.toISOString().split('T')[0];
 
-        // Check if present
-        const isPresent = empLogs.some(l => {
-          const logDate = new Date(l.createdAt).toISOString().split('T')[0];
-          return logDate === dateStr;
-        });
-
-        if (isPresent) {
-          presentDates.push(day);
-          return;
-        }
-
-        // Check if on leave
+        // 1. Check for Approved Leave (Highest Priority)
         const isOnLeave = empLeaves.some(l => {
           const start = new Date(l.startDate).toISOString().split('T')[0];
           const end = new Date(l.endDate).toISOString().split('T')[0];
@@ -745,7 +734,20 @@ app.get("/api/admin/attendance-report", async (req, res) => {
           return;
         }
 
-        absentDates.push(day);
+        // 2. Check for Presence vs Breach (Only if no leave)
+        const dayLogs = empLogs.filter(l => {
+          const logDate = new Date(l.createdAt).toISOString().split('T')[0];
+          return logDate === dateStr;
+        });
+
+        const hasBreach = dayLogs.some(l => l.status === "Outside");
+        const isPresent = dayLogs.length > 0 && !hasBreach;
+
+        if (isPresent) {
+          presentDates.push(day);
+        } else {
+          absentDates.push(day);
+        }
       });
 
       return {
