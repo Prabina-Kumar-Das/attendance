@@ -56,19 +56,19 @@ const RegistrationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100 via-slate-50 to-teal-50 flex items-center justify-center p-4 py-8">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100 via-slate-50 to-teal-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4 py-8 transition-colors duration-300">
       <div className="max-w-md w-full relative">
-        <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-indigo-200/50 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-teal-100/50 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-indigo-200/50 dark:bg-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-teal-100/50 dark:bg-teal-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-8 sm:p-10">
+        <div className="premium-card backdrop-blur-xl transition-all duration-300">
           
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 dark:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 mb-4">
               <ShieldCheck className="text-white w-7 h-7" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Create Account</h1>
-            <p className="text-gray-500 mt-1 text-sm">Join the professional network</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors">Create Account</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm transition-colors">Join the professional network</p>
           </div>
 
           {/* Error Message Display */}

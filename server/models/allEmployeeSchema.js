@@ -7,7 +7,8 @@ const allEmployeeSchema = new mongoose.Schema(
     password: String,
     EmployeeId: String,
     role: String,
-    contact: Number
+    contact: Number,
+    theme: { type: String, default: 'light' }
   }
 )
 

@@ -6,8 +6,10 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   ShieldAlert, ShieldCheck, MapPin, Clock, Server,
-  UserCheck, X, CheckCircle, AlertTriangle, Wifi, LogOut
+  UserCheck, X, CheckCircle, AlertTriangle, Wifi, LogOut,
+  RefreshCw, Activity, User, Eye, Calendar, Shield, Quote
 } from "lucide-react";
+import Navbar from "../../navbar/Navbar";
 
 // Fix default Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -440,75 +442,55 @@ const DashboardEmployee = () => {
       getLocationFromIP();
     }
   }, []);
-
   const fmtCountdown = (s) =>
     `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 font-sans relative overflow-x-hidden">
-
-      {/* ── HEADER ── */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-5 flex justify-between items-center border border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-blue-600">
-            <ShieldCheck size={26} />
-            <h1 className="font-extrabold text-xl tracking-tight text-gray-800 leading-none">
-              SECURE<br />TRACK
-            </h1>
-          </div>
-          <div className="h-8 w-px bg-gray-300" />
-          <h2 className="font-semibold text-gray-700">Employee Portal</h2>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-sm">
-              {currentUser.name ? currentUser.name[0].toUpperCase() : "E"}
-            </div>
-            <div>
-              <p className="font-bold text-sm text-gray-800 uppercase leading-none">{currentUser.name || "Employee"}</p>
-              <p className="text-xs text-gray-500">{currentUser.role || "Staff"}</p>
-            </div>
-          </div>
-          <div className="text-right text-xs">
-            <p className="font-bold text-gray-700 uppercase">{currentDate || "LOADING..."}</p>
-            <p className="text-gray-500 flex items-center justify-end gap-1 mt-0.5">
-              System:&nbsp;
-              <span className={`px-2 py-0.5 rounded-sm font-bold text-[10px] ${isInside ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 animate-pulse"}`}>
-                {isInside ? "SECURE" : "ALERT"}
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-3 md:p-6 font-sans relative overflow-x-hidden transition-colors duration-300">
+      <Navbar title="Employee Portal" user={currentUser} />
 
       {/* ── MAIN GRID ── */}
-      <div className={`grid grid-cols-1 md:grid-cols-3 gap-5 transition-all duration-300 ${isBreached ? "blur-sm pointer-events-none select-none" : ""}`}>
+      <div className={`mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 transition-all duration-300 ${isBreached ? "blur-sm pointer-events-none select-none" : ""}`}>
 
         {/* ── LEFT COLUMN ── */}
         <div className="space-y-5">
 
           {/* Punch-In Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Punch-In Summary</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-400 uppercase font-semibold">Punch-In Time</p>
-                <p className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                  <Clock size={16} className="text-blue-500" />
-                  {punchInTime || "—"}
-                </p>
+          <div className="premium-card">
+            <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <Clock size={14} className="text-blue-500" />
+              Punch-In Summary
+            </h3>
+            <div className="space-y-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-black tracking-tighter mb-1">Punch-In Time</p>
+                  <p className="font-extrabold text-xl text-gray-900 dark:text-white">
+                    {punchInTime || "—:—"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-black tracking-tighter mb-1">Status</p>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isPunchedIn ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-400"}`}>
+                    {isPunchedIn ? "ACTIVE" : "INACTIVE"}
+                  </span>
+                </div>
               </div>
+
               <div>
-                <p className="text-xs text-gray-400 uppercase font-semibold">Punch-In Location</p>
-                <p className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                  <MapPin size={14} className="text-blue-500" />
-                  {punchInLocation}
-                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-black tracking-tighter mb-1">Current Location</p>
+                <div className="flex items-center gap-2 text-sm font-bold text-gray-800 dark:text-gray-200">
+                  <MapPin size={14} className="text-blue-500 flex-shrink-0" />
+                  <span className="truncate">{punchInLocation}</span>
+                </div>
               </div>
-              <div className="text-xs text-gray-500 font-mono">
+
+              <div className="p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800 text-[11px] font-medium leading-relaxed">
                 {locationLoading ? (
-                  <span className="text-yellow-600 font-bold">⏳ Acquiring location...</span>
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 animate-pulse">
+                    <RefreshCw size={12} className="animate-spin" />
+                    <span>Acquiring high-accuracy GPS...</span>
+                  </div>
                 ) : locationError ? (
                   <span className="text-red-500 font-bold">⚠️ {locationError}</span>
                 ) : (
@@ -551,15 +533,15 @@ const DashboardEmployee = () => {
           </div>
 
           {/* Geofence Map */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col" style={{ height: "320px" }}>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Geofence Monitor</h3>
-              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${isInside ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 animate-pulse"}`}>
+          <div className="premium-card !p-0 overflow-hidden flex flex-col" style={{ height: "360px" }}>
+            <div className="px-5 py-4 flex justify-between items-center border-b border-gray-100 dark:border-slate-800">
+              <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Geofence Monitor</h3>
+              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black ${isInside ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse"}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${isInside ? "bg-green-500" : "bg-red-500"}`} />
-                {isInside ? "INSIDE" : "BREACH"}
+                {isInside ? "SECURE" : "BREACHED"}
               </div>
             </div>
-            <div className="flex-1 rounded-lg overflow-hidden border border-gray-200">
+            <div className="flex-1 relative">
               <MapContainer
                 center={[userLocation.lat, userLocation.lng]}
                 zoom={15}
@@ -640,18 +622,21 @@ const DashboardEmployee = () => {
           </div>
 
           {/* Activity Log */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Activity Log</h3>
+          <div className="premium-card">
+            <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <Activity size={14} className="text-blue-500" />
+              Activity Log
+            </h3>
             {activityLog.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-4">No activity yet</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-6">No activity recorded yet</p>
             ) : (
-              <div className="relative border-l border-gray-200 ml-2 space-y-4">
+              <div className="relative border-l-2 border-gray-100 dark:border-slate-800 ml-2 space-y-6">
                 {activityLog.map((item, i) => (
-                  <div key={i} className="relative pl-5">
-                    <div className="absolute w-2.5 h-2.5 bg-blue-500 rounded-full -left-1.25 top-0.5 border-2 border-white" style={{ left: "-5px" }} />
-                    <p className="text-xs font-bold text-gray-800">{item.title}</p>
-                    <p className="text-[11px] text-gray-500">{item.detail}</p>
-                    <p className="text-[10px] text-gray-400">{item.time}</p>
+                  <div key={i} className="relative pl-6">
+                    <div className="absolute w-3 h-3 bg-blue-500 rounded-full -left-1.5 top-0.5 border-2 border-white dark:border-slate-900 shadow-sm" />
+                    <p className="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-tight">{item.title}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">{item.detail}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-600 font-bold mt-1 tabular-nums">{item.time}</p>
                   </div>
                 ))}
               </div>
@@ -663,47 +648,55 @@ const DashboardEmployee = () => {
         <div className="space-y-5">
 
           {/* Profile Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Profile</h3>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+          <div className="premium-card">
+            <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <User size={14} className="text-blue-500" />
+              Member Profile
+            </h3>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-xl flex-shrink-0 shadow-lg shadow-blue-500/20">
                 {currentUser.name ? currentUser.name[0].toUpperCase() : "?"}
               </div>
-              <div>
-                <p className="font-bold text-gray-800">{currentUser.name || "Employee"}</p>
-                <p className="text-xs text-gray-500">{currentUser.email || "Not logged in"}</p>
-                <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">
+              <div className="min-w-0">
+                <p className="font-black text-gray-900 dark:text-white truncate uppercase tracking-tight">{currentUser.name || "Employee"}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mb-2 font-medium">{currentUser.email || "Offline Account"}</p>
+                <span className="text-[10px] font-black bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 px-2 py-0.5 rounded-md uppercase tracking-widest">
                   {currentUser.role || "Staff"}
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => { setShowUpdateModal(true); setUpdateStatus(""); setUpdateMsg(""); setUpdateForm({ name: currentUser.name || "", email: currentUser.email || "", employeeId: "", role: currentUser.role || "", password: "" }); }}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors mb-2"
-            >
-              ✏️ Request Profile Update
-            </button>
-            <button
-              onClick={() => { setShowLeaveModal(true); setLeaveStatus(""); setLeaveMsg(""); setLeaveForm({ requestType: "Full Day Leave", startDate: "", endDate: "", reason: "" }); }}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-teal-50 border border-teal-200 text-xs font-bold text-teal-700 hover:bg-teal-100 transition-colors mb-2"
-            >
-              📅 Request Leave / Special
-            </button>
-            <button
-              onClick={() => { localStorage.removeItem("user"); window.location.href = "/"; }}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <LogOut size={13} /> Sign Out
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => { setShowUpdateModal(true); setUpdateStatus(""); setUpdateMsg(""); setUpdateForm({ name: currentUser.name || "", email: currentUser.email || "", employeeId: "", role: currentUser.role || "", password: "" }); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 text-xs font-black text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all uppercase tracking-widest shadow-sm"
+              >
+                ✏️ Profile Update
+              </button>
+              <button
+                onClick={() => { setShowLeaveModal(true); setLeaveStatus(""); setLeaveMsg(""); setLeaveForm({ requestType: "Full Day Leave", startDate: "", endDate: "", reason: "" }); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/30 text-xs font-black text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/20 transition-all uppercase tracking-widest shadow-sm"
+              >
+                📅 Request Leave
+              </button>
+              <button
+                onClick={() => { localStorage.removeItem("user"); window.location.href = "/"; }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 dark:border-slate-800 text-xs font-black text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all uppercase tracking-widest"
+              >
+                <LogOut size={13} /> Log Out
+              </button>
+            </div>
           </div>
 
           {/* Secure Connection */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Secure Connection</h3>
-            <ul className="space-y-3 text-sm">
+          <div className="premium-card">
+            <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <ShieldCheck size={14} className="text-blue-500" />
+              Secure Connection
+            </h3>
+            <ul className="space-y-4 text-sm">
               <li className="flex justify-between items-center">
-                <span className="flex items-center gap-2 text-gray-600 text-xs"><Server size={14} /> Main Server Sync:</span>
-                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">ACTIVE</span>
+                <span className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-[11px] font-black uppercase tracking-tighter"><Server size={14} className="text-blue-400" /> Server Sync:</span>
+                <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest">ACTIVE</span>
               </li>
               <li className="flex justify-between items-center">
                 <span className="flex items-center gap-2 text-gray-600 text-xs"><ShieldCheck size={14} /> OTP Service:</span>
@@ -734,22 +727,25 @@ const DashboardEmployee = () => {
           </div>
 
           {/* Leave History Info */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Leave History</h3>
+          <div className="premium-card">
+            <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <Calendar size={14} className="text-blue-500" />
+              Recent Leaves
+            </h3>
             {leaveRequests.length === 0 ? (
-              <p className="text-xs text-gray-400">No leave requests yet.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-4">No recent history</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {leaveRequests.slice(0, 3).map(req => (
-                  <div key={req._id} className="border border-gray-100 p-2 rounded-lg">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-gray-800">{req.requestType}</span>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${req.status === "Pending" ? "bg-amber-100 text-amber-700" : req.status === "Approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{req.status}</span>
+                  <div key={req._id} className="bg-gray-50/50 dark:bg-slate-800/30 border border-gray-100 dark:border-slate-800 p-3 rounded-xl transition-all hover:border-blue-200 dark:hover:border-blue-900/30">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-[11px] font-black text-gray-800 dark:text-gray-200 uppercase tracking-tight">{req.requestType}</span>
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${req.status === "Pending" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : req.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>{req.status}</span>
                     </div>
-                    <p className="text-[10px] text-gray-500">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold tabular-nums italic">{new Date(req.startDate).toLocaleDateString()} — {new Date(req.endDate).toLocaleDateString()}</p>
                   </div>
                 ))}
-                {leaveRequests.length > 3 && <p className="text-[10px] text-blue-500 text-center font-bold">+{leaveRequests.length - 3} older requests hidden</p>}
+                {leaveRequests.length > 3 && <p className="text-[10px] text-blue-500 dark:text-blue-400 text-center font-black uppercase tracking-widest pt-1 cursor-pointer hover:underline">View All Requests (+{leaveRequests.length - 3})</p>}
               </div>
             )}
           </div>
@@ -758,23 +754,26 @@ const DashboardEmployee = () => {
 
       {/* ── UPDATE PROFILE MODAL ── */}
       {showUpdateModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-40 px-4">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowUpdateModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-100 p-6 z-10">
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full p-1" onClick={() => setShowUpdateModal(false)}>
-              <X size={16} />
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowUpdateModal(false)} />
+          <div className="relative premium-card w-full max-w-md border-white/20 dark:border-slate-800/60 shadow-2xl z-10 transition-all duration-300">
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors" onClick={() => setShowUpdateModal(false)}>
+              <X size={20} />
             </button>
-
-            <div className="mb-5">
-              <h2 className="text-base font-black text-gray-900 uppercase tracking-tight">Request Profile Update</h2>
-              <p className="text-xs text-gray-500 mt-1">Fill in the fields you want to change. Your request will be sent to the admin for approval.</p>
+            
+            <div className="mb-8">
+              <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                <span className="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg"><User size={20} className="text-indigo-600 dark:text-indigo-400" /></span>
+                Update Profile
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">Modified fields will be sent for admin verification.</p>
             </div>
 
             {/* Status Banner */}
             {updateMsg && (
-              <div className={`mb-4 p-3 rounded-lg text-xs font-semibold border ${updateStatus === "success" ? "bg-green-50 border-green-200 text-green-700" :
-                  updateStatus === "already" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
-                    "bg-red-50 border-red-200 text-red-700"
+              <div className={`mb-6 p-4 rounded-xl text-xs font-bold border transition-all ${updateStatus === "success" ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/40 dark:text-green-400" :
+                  updateStatus === "already" ? "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-900/40 dark:text-amber-400" :
+                    "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/40 dark:text-red-400"
                 }`}>
                 {updateMsg}
               </div>
@@ -833,39 +832,39 @@ const DashboardEmployee = () => {
               </div>
 
               {/* Password */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">New Password <span className="text-gray-400 font-normal normal-case">(leave blank to keep current)</span></label>
-                <div className="relative">
-                  <input
-                    type={showUpdatePwd ? "text" : "password"}
-                    placeholder="New password (optional)"
-                    value={updateForm.password}
-                    onChange={e => setUpdateForm(p => ({ ...p, password: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 pr-10"
-                  />
-                  <button type="button" onClick={() => setShowUpdatePwd(v => !v)} className="absolute inset-y-0 right-3 text-gray-400 hover:text-gray-600 flex items-center">
-                    {showUpdatePwd ? "🙈" : "👁️"}
-                  </button>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showUpdatePwd ? "text" : "password"}
+                      placeholder="Optional"
+                      value={updateForm.password}
+                      onChange={e => setUpdateForm(p => ({ ...p, password: e.target.value }))}
+                      className="w-full pr-10"
+                    />
+                    <button type="button" onClick={() => setShowUpdatePwd(v => !v)} className="absolute inset-y-0 right-3 text-gray-400 hover:text-indigo-500 transition-colors">
+                      {showUpdatePwd ? <X size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowUpdateModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+                  className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-black text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 uppercase tracking-widest"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updateStatus === "pending" || updateStatus === "success"}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${updateStatus === "success" ? "bg-green-500 text-white" :
-                      updateStatus === "pending" ? "bg-gray-200 text-gray-400" :
-                        "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"
+                  className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${updateStatus === "success" ? "bg-green-500 text-white" :
+                      updateStatus === "pending" ? "bg-gray-300 dark:bg-slate-800 text-gray-500" :
+                        "bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/30 text-white"
                     }`}
                 >
-                  {updateStatus === "pending" ? "Sending..." : updateStatus === "success" ? "✓ Request Sent!" : "Send Request to Admin"}
+                  {updateStatus === "pending" ? "Processing..." : updateStatus === "success" ? "Done" : "Verify & Send"}
                 </button>
               </div>
             </form>
@@ -985,25 +984,25 @@ const DashboardEmployee = () => {
             </button>
 
             {/* Icon */}
-            <div className="relative mb-4">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-ping opacity-60" />
-              <div className="relative bg-white p-3 rounded-full shadow border border-red-100">
-                <ShieldAlert size={38} className="text-red-500" />
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
+              <div className="relative bg-white dark:bg-slate-900 p-4 rounded-full shadow-xl border border-red-500/30">
+                <ShieldAlert size={40} className="text-red-500" />
               </div>
             </div>
 
-            <h2 className="text-base font-black text-gray-900 uppercase tracking-widest mb-1">URGENT: SECURITY ALERT</h2>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-2">Security Breach Detected</h2>
 
-            <p className="text-xs text-gray-500 mb-4 px-2 leading-relaxed">
-              Your device moved beyond the campus geofence boundary. An encrypted OTP has been sent to <strong>{currentUser.email || "your registered email"}</strong>.
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-6 px-4 leading-relaxed font-medium">
+              You have left the authorized campus zone. A temporary security code has been dispatched to <strong>{currentUser.email}</strong>.
             </p>
 
             {/* Countdown */}
-            <div className={`px-4 py-2 rounded-lg mb-5 font-black text-base tracking-wider ${countdown <= 60 ? "bg-red-100 text-red-600" : "bg-orange-50 text-orange-600"}`}>
-              ⏱ Time Remaining: {fmtCountdown(countdown)}
+            <div className={`w-full px-6 py-3 rounded-2xl mb-8 font-black text-lg tracking-widest tabular-nums shadow-inner transition-colors duration-500 ${countdown <= 60 ? "bg-red-500 text-white animate-pulse" : "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30"}`}>
+              {fmtCountdown(countdown)}
             </div>
             {countdown === 0 && (
-              <p className="text-xs text-red-600 font-bold mb-3 animate-pulse">⚠ Time expired — Admin has been notified!</p>
+              <p className="text-[10px] text-red-600 dark:text-red-400 font-black mb-4 animate-bounce uppercase tracking-widest">Emergency Protocol Initiated</p>
             )}
 
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Enter 4-Digit OTP</p>

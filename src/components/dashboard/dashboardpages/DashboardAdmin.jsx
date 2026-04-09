@@ -6,10 +6,12 @@ import {
   LayoutDashboard, Users, Map, ShieldAlert, Bell, Settings,
   Search, Filter, Server, Activity, ChevronDown, LogOut,
   User, Eye, Check, X, Clock, MapPin, Wifi, RefreshCw,
-  AlertTriangle, CheckCircle, TrendingUp, Smartphone, Plus, Trash2, Calendar
+  AlertTriangle, CheckCircle, TrendingUp, Smartphone, Plus, Trash2, Calendar,
+  Shield, ShieldCheck, Quote
 } from "lucide-react";
 import axios from "axios";
 import API_BASE from "../../../config/api";
+import Navbar from "../../navbar/Navbar";
 
 // ─── Fix Leaflet default marker ───────────────────────────────────────────────
 delete L.Icon.Default.prototype._getIconUrl;
@@ -106,6 +108,7 @@ const DashboardAdmin = () => {
   const [clockStr,       setClockStr]       = useState("");
   const [showBell,       setShowBell]       = useState(false);
   const [showAdmin,      setShowAdmin]      = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen]   = useState(false);
 
   const [updateRequests, setUpdateRequests] = useState([]);
   const bellRef  = useRef(null);
@@ -263,166 +266,99 @@ const DashboardAdmin = () => {
   const masterGeofence = geofences.find(g => g.name === "Master") || (geofences.length > 0 ? geofences[0] : { lat: 20.2961, lng: 85.8245, radius: 250 });
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
+      
+      {/* ── MOBILE SIDEBAR TOGGLE ── */}
+      <button 
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="fixed bottom-6 right-6 lg:hidden z-50 p-4 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 transition-all active:scale-95"
+      >
+        <LayoutDashboard size={24} />
+      </button>
+
       {/* ── SIDEBAR ── */}
-      <aside className="w-52 min-w-[13rem] bg-[#0f1623] flex flex-col py-6 px-3 gap-2 z-20 flex-shrink-0">
-        <div className="flex items-center gap-2.5 px-3 mb-6">
-          <div className="p-1.5 bg-blue-600 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-            </svg>
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        flex flex-col py-8 px-4 gap-2 flex-shrink-0 border-r border-white/5 shadow-2xl
+      `}>
+        <div className="flex items-center gap-3 px-2 mb-10">
+          <div className="p-1.5 bg-blue-600 rounded-lg text-white shadow-lg">
+            <ShieldAlert size={24} />
           </div>
-          <div className="leading-none">
-            <p className="text-white font-black text-xs tracking-widest uppercase">Secure</p>
-            <p className="text-blue-400 font-black text-xs tracking-widest uppercase">Track</p>
+          <div className="flex flex-col leading-none">
+            <span className="font-black text-white tracking-widest text-sm uppercase">SECURE</span>
+            <span className="font-black text-blue-400 tracking-widest text-sm uppercase">TRACK</span>
           </div>
-          <span className="ml-1 text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wider">Admin</span>
+          <span className="ml-1 text-[10px] font-bold bg-blue-600/50 text-white px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">ADMIN</span>
         </div>
 
-        {NAV_ITEMS.map(({ key, label, Icon }) => (
-          <button
-            key={key}
-            onClick={() => setActiveNav(key)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 w-full text-left ${
-              activeNav === key
-                ? "bg-blue-600 text-white shadow-lg"
-                : "text-gray-400 hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <Icon size={17} className="flex-shrink-0"/>
-            <span>{label}</span>
-            {key === "alerts" && unreadCount > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">
-                {unreadCount}
-              </span>
-            )}
-            {key === "updaterequests" && updateRequests.filter(r => r.status === "Pending").length > 0 && (
-              <span className="ml-auto bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">
-                {updateRequests.filter(r => r.status === "Pending").length}
-              </span>
-            )}
-            {key === "leaverequests" && leaveRequests.filter(r => r.status === "Pending").length > 0 && (
-              <span className="ml-auto bg-teal-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">
-                {leaveRequests.filter(r => r.status === "Pending").length}
-              </span>
-            )}
-          </button>
-        ))}
-
-        <div className="mt-auto px-3 py-3 rounded-lg bg-white/5 border border-white/10">
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">System Health</p>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"/>
-            <span className="text-xs text-green-400 font-bold">All Systems Operational</span>
-          </div>
-          <p className="text-[10px] text-gray-600 mt-1">v2.4.1 — Secure</p>
-        </div>
-      </aside>
-
-      {/* ── MAIN PANEL ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* ── TOP HEADER ── */}
-        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 flex-shrink-0 z-10">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
-            />
-          </div>
-
-          <div className="flex-1"/>
-          <span className="text-[11px] font-mono text-gray-500 hidden lg:block">{clockStr}</span>
-
-          <div className="relative" ref={bellRef}>
+        <div className="flex-1 space-y-1">
+          {NAV_ITEMS.map(({ key, label, Icon }) => (
             <button
-              onClick={() => { setShowBell(p => !p); setShowAdmin(false); }}
-              className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
+              key={key}
+              onClick={() => { setActiveNav(key); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                activeNav === key 
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
             >
-              <Bell size={18}/>
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce">
+              <Icon size={16} />
+              <span>{label}</span>
+              {key === "alerts" && unreadCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">
                   {unreadCount}
                 </span>
               )}
             </button>
-            {showBell && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-                  <p className="font-bold text-sm text-gray-800">Notifications</p>
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{unreadCount} unread</span>
-                </div>
-                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                  {alerts.filter(a => a.type === "alarm").map(a => (
-                    <div key={a.id} className="px-4 py-3 hover:bg-gray-50 flex gap-3 items-start">
-                      <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5"/>
-                      <div className="flex-1 min-w-0 flex flex-col">
-                        <p className="text-xs font-bold text-gray-800 break-words">{a.event} — {a.user}</p>
-                        <p className="text-[11px] text-gray-500 break-words mt-0.5">{a.detail}</p>
-                        {a.countdown > 0 && <p className="text-[10px] text-red-500 font-bold mt-1">{fmt(a.countdown)} remaining</p>}
-                      </div>
-                    </div>
-                  ))}
-                  {alerts.filter(a => a.type === "alarm").length === 0 && (
-                    <p className="px-4 py-6 text-center text-sm text-gray-400">No active alarms</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          ))}
+        </div>
 
-          <div className="relative" ref={adminRef}>
-            <button
-              onClick={() => { setShowAdmin(p => !p); setShowBell(false); }}
-              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs">A</div>
-              <span className="text-sm font-bold text-gray-800">Administrator</span>
-              <ChevronDown size={13} className={`text-gray-500 transition-transform ${showAdmin ? "rotate-180" : ""}`}/>
-            </button>
-            {showAdmin && (
-              <div className="absolute right-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden">
-                <button className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                  <User size={14}/> Profile
-                </button>
-                <button className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                  <Settings size={14}/> Settings
-                </button>
-                <div className="my-1 border-t border-gray-100"/>
-                <button 
-                  onClick={() => { localStorage.removeItem("user"); window.location.href = "/"; }}
-                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                  <LogOut size={14}/> Logout
-                </button>
-              </div>
-            )}
+        <div className="mt-auto p-4 rounded-2xl bg-white/5 border border-white/10">
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-2">Network Status</p>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+            <span className="text-xs text-green-400 font-bold tracking-tight">System Online</span>
           </div>
-        </header>
+        </div>
+      </aside>
+
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── MAIN PANEL ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar title="Admin Dashboard" />
 
         {/* ── SCROLLABLE CONTENT ── */}
         <main className="flex-1 overflow-y-auto p-5 space-y-4 relative">
           
           {/* DASHBOARD VIEW */}
           {activeNav === "dashboard" && (
-            <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                <StatCard icon={Smartphone} iconBg="bg-blue-100" iconColor="text-blue-600" label="Active Devices" value={stats.activeDevices} />
-                <StatCard icon={ShieldAlert} iconBg="bg-purple-100" iconColor="text-purple-600" label="Geofences Active" value={stats.totalGeofences} />
-                <StatCard icon={Wifi} iconBg="bg-green-100" iconColor="text-green-600" label="Total Employees" value={stats.totalEmployees} />
-                <StatCard icon={TrendingUp} iconBg="bg-orange-100" iconColor="text-orange-600" label="OTP Sent Today" value={stats.otpSentToday} pulse={stats.activeBreaches > 0} />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard icon={Smartphone} iconBg="bg-blue-100 dark:bg-blue-900/30" iconColor="text-blue-600 dark:text-blue-400" label="ACTIVE DEVICES" value={stats.activeDevices} />
+                <StatCard icon={ShieldAlert} iconBg="bg-purple-100 dark:bg-purple-900/30" iconColor="text-purple-600 dark:text-purple-400" label="GEOFENCES" value={stats.totalGeofences} />
+                <StatCard icon={Users} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400" label="EMPLOYEES" value={stats.totalEmployees} />
+                <StatCard icon={TrendingUp} iconBg="bg-orange-100 dark:bg-orange-900/30" iconColor="text-orange-600 dark:text-orange-400" label="OTP SENT" value={stats.otpSentToday} pulse={stats.activeBreaches > 0} />
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
-                <div className="xl:col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col" style={{ minHeight: "360px" }}>
-                  <div className="flex justify-between items-center mb-3">
-                    <div>
-                      <h2 className="text-xs font-black text-gray-700 uppercase tracking-widest">Global Live Tracking</h2>
-                    </div>
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="xl:col-span-2 premium-card !p-0 flex flex-col overflow-hidden" style={{ minHeight: "400px" }}>
+                  <div className="px-6 py-4 flex justify-between items-center border-b border-gray-100 dark:border-slate-800">
+                    <h2 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Global Live Tracking</h2>
+                    <span className="flex items-center gap-1.5 text-[10px] font-black text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      LIVE FEED
+                    </span>
                   </div>
-                  <div className="flex-1 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 relative" style={{ height: "280px" }}>
+                  <div className="flex-1 relative">
                     <MapContainer center={[masterGeofence.lat, masterGeofence.lng]} zoom={14} style={{ width: "100%", height: "100%" }} zoomControl={true}>
                       <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       {geofences.map(gf => (
@@ -464,41 +400,60 @@ const DashboardAdmin = () => {
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* EMPLOYEES VIEW */}
           {activeNav === "employees" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 min-h-[500px]">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest">Employee Directory</h2>
+            <div className="premium-card !p-0 overflow-hidden min-h-[500px]">
+              <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+                <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest">Employee Directory</h2>
+                <div className="flex gap-2">
+                  <span className="text-[10px] font-black bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 px-2 py-1 rounded-md uppercase tracking-widest">
+                    {allEmployeesDB.length} TOTAL
+                  </span>
+                </div>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-gray-100">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100">
-                      <th className="py-3 px-4">Employee ID</th>
-                      <th className="py-3 px-4">Name</th>
-                      <th className="py-3 px-4">Email</th>
-                      <th className="py-3 px-4">Role</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                    <tr className="bg-gray-50/50 dark:bg-slate-800/50 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                      <th className="py-4 px-6">Identity</th>
+                      <th className="py-4 px-6">Credentials</th>
+                      <th className="py-4 px-6">Position</th>
+                      <th className="py-4 px-6 text-right">Management</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                     {allEmployeesDB.map(emp => (
-                      <tr key={emp._id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4 font-mono text-xs font-bold text-gray-500">{emp.EmployeeId || "-"}</td>
-                        <td className="py-3 px-4 font-bold text-gray-800 text-sm">{emp.name}</td>
-                        <td className="py-3 px-4 text-xs text-gray-500">{emp.email}</td>
-                        <td className="py-3 px-4"><span className="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase">{emp.role}</span></td>
-                        <td className="py-3 px-4 text-right">
-                          <button onClick={() => handleDeleteEmployee(emp._id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
-                            <Trash2 size={14}/>
+                      <tr key={emp._id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-500 dark:text-slate-400">
+                              {emp.name[0]}
+                            </div>
+                            <div>
+                              <p className="font-black text-gray-800 dark:text-gray-200 text-sm">{emp.name}</p>
+                              <p className="text-[10px] font-mono text-gray-400 dark:text-gray-500 tracking-tighter uppercase">{emp.EmployeeId || "ID-PENDING"}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <p className="text-xs font-bold text-gray-600 dark:text-gray-400">{emp.email}</p>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-900/50">
+                            {emp.role}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleDeleteEmployee(emp._id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-xl transition-all">
+                            <Trash2 size={16}/>
                           </button>
                         </td>
                       </tr>
                     ))}
-                    {allEmployeesDB.length === 0 && <tr><td colSpan={5} className="py-10 text-center text-sm text-gray-400">No employees found.</td></tr>}
+                    {allEmployeesDB.length === 0 && <tr><td colSpan={4} className="py-20 text-center text-xs font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">No matching personnel records</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -507,27 +462,39 @@ const DashboardAdmin = () => {
 
           {/* GEOFENCES VIEW */}
           {activeNav === "geofences" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 min-h-[500px]">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest">Geofence Zones</h2>
-                <button onClick={() => { setEditGeofence({ name: "", lat: 20.2961, lng: 85.8245, radius: 100, color: "#3b82f6", description: "" }); setShowGeofenceModal(true); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors">
-                  <Plus size={14}/> New Zone
+            <div className="premium-card min-h-[500px]">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest">Geofence Zones</h2>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight mt-1">Boundaries and security perimeters</p>
+                </div>
+                <button 
+                  onClick={() => { setEditGeofence({ name: "", lat: 20.2961, lng: 85.8245, radius: 100, color: "#3b82f6", description: "" }); setShowGeofenceModal(true); }} 
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-95"
+                >
+                  <Plus size={16}/> New Zone
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {geofences.map(gf => (
-                  <div key={gf._id} className="border border-gray-200 rounded-xl p-4 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 flex gap-2">
-                      <button onClick={() => handleDeleteGeofence(gf._id)} className="text-red-400 hover:text-red-600"><Trash2 size={14}/></button>
+                  <div key={gf._id} className="group bg-gray-50/50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 relative transition-all hover:border-blue-400/50 hover:shadow-xl hover:shadow-blue-500/5">
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleDeleteGeofence(gf._id)} className="text-gray-400 hover:text-red-500 p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700"><Trash2 size={14}/></button>
                     </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: gf.color }}></span>
-                      <h3 className="font-bold text-gray-800">{gf.name}</h3>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-4 h-4 rounded-full ring-4 ring-offset-2 dark:ring-offset-slate-900 transition-all font-black" style={{ backgroundColor: gf.color, ringColor: `${gf.color}33` }}></div>
+                      <h3 className="font-black text-gray-800 dark:text-gray-200 uppercase tracking-tight text-sm">{gf.name}</h3>
                     </div>
-                    <p className="text-xs text-gray-500 mb-3">{gf.description || "No description"}</p>
-                    <div className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded-lg">
-                      <p>Center: {gf.lat.toFixed(4)}, {gf.lng.toFixed(4)}</p>
-                      <p>Radius: {gf.radius}m</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed mb-6">{gf.description || "Active perimeter surveillance"}</p>
+                    <div className="grid grid-cols-2 gap-2 text-[10px] font-black uppercase tracking-tighter">
+                      <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-gray-100 dark:border-slate-700">
+                        <p className="text-gray-400 mb-0.5">Radius</p>
+                        <p className="text-blue-600 dark:text-blue-400">{gf.radius}m</p>
+                      </div>
+                      <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-gray-100 dark:border-slate-700">
+                        <p className="text-gray-400 mb-0.5">Status</p>
+                        <p className="text-green-600">ACTIVE</p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -537,35 +504,38 @@ const DashboardAdmin = () => {
 
           {/* ALERTS VIEW */}
           {activeNav === "alerts" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 min-h-[500px]">
-              <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Alert History</h2>
-              <div className="overflow-x-auto rounded-lg border border-gray-100">
+            <div className="premium-card !p-0 overflow-hidden min-h-[500px]">
+              <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+                <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest">Alert History</h2>
+              </div>
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100">
-                      <th className="py-3 px-4">Time</th>
-                      <th className="py-3 px-4">User</th>
-                      <th className="py-3 px-4">Event</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Detail</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                    <tr className="bg-gray-50/50 dark:bg-slate-800/50 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                      <th className="py-4 px-6">Timestamp</th>
+                      <th className="py-4 px-6">Personnel</th>
+                      <th className="py-4 px-6">Status</th>
+                      <th className="py-4 px-6 text-right">Intervention</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50 text-xs">
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                     {alerts.map(a => (
-                      <tr key={a.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-gray-500">{new Date(a.createdAt).toLocaleString()}</td>
-                        <td className="py-3 px-4 font-bold">{a.user} <span className="text-[10px] font-normal text-gray-400 block">{a.empId}</span></td>
-                        <td className="py-3 px-4 text-gray-700">{a.event}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] ${a.status === "Alarm" ? "bg-red-100 text-red-700" : a.status === "Resolved" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                      <tr key={a.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
+                        <td className="py-4 px-6 text-[11px] font-bold text-gray-500 dark:text-gray-400 tabular-nums">
+                          {new Date(a.createdAt).toLocaleString()}
+                        </td>
+                        <td className="py-4 px-6">
+                          <p className="font-black text-gray-800 dark:text-gray-200 text-xs uppercase tracking-tight">{a.user}</p>
+                          <p className="text-[10px] font-mono text-gray-400 dark:text-gray-500">{a.empId}</p>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`px-2 py-0.5 rounded-md font-black uppercase text-[10px] tracking-widest ${a.status === "Alarm" ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400" : a.status === "Resolved" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"}`}>
                             {a.status}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-gray-500 max-w-xs truncate">{a.detail}</td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-4 px-6 text-right">
                           {a.status === "Alarm" && (
-                            <button onClick={() => resolveAlert(a.id)} className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded hover:bg-green-100">Resolve</button>
+                            <button onClick={() => resolveAlert(a.id)} className="text-[10px] font-black text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-lg border border-green-100 dark:border-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all uppercase tracking-widest">Resolve</button>
                           )}
                         </td>
                       </tr>
@@ -597,93 +567,145 @@ const DashboardAdmin = () => {
 
           {/* UPDATE REQUESTS */}
           {activeNav === "updaterequests" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest">Profile Update Requests</h2>
-              </div>
-              <div className="space-y-3">
+            <div className="space-y-6">
+              <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest mb-4">Profile Verification Queue</h2>
+              <div className="grid grid-cols-1 gap-4">
                 {updateRequests.filter(r => r.status === "Pending").map((req) => (
-                  <div key={req._id} className="bg-white rounded-xl border p-4 shadow-sm border-amber-200">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-bold text-gray-800">{req.userName} <span className="text-xs font-normal text-gray-500">({req.userEmail})</span></p>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-700">Pending</span>
+                  <div key={req._id} className="premium-card !p-6 border-amber-200/50 dark:border-amber-900/30 bg-amber-50/10 dark:bg-amber-900/5">
+                    <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-700 dark:text-amber-400 font-black text-sm">
+                            {req.userName[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{req.userName}</p>
+                            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{req.userEmail}</p>
+                          </div>
                         </div>
-                        <div className="mt-2 bg-gray-50 rounded-lg p-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                          {req.requestedData?.name && <div><span className="font-bold text-gray-500">Name →</span> <span className="text-gray-800">{req.requestedData.name}</span></div>}
-                          {req.requestedData?.email && <div><span className="font-bold text-gray-500">Email →</span> <span className="text-gray-800">{req.requestedData.email}</span></div>}
-                          {req.requestedData?.employeeId && <div><span className="font-bold text-gray-500">Emp ID →</span> <span className="text-gray-800">{req.requestedData.employeeId}</span></div>}
-                          {req.requestedData?.role && <div><span className="font-bold text-gray-500">Role →</span> <span className="text-gray-800">{req.requestedData.role}</span></div>}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                          {Object.entries(req.requestedData || {}).map(([key, val]) => val && (
+                            <div key={key} className="bg-white dark:bg-slate-900/50 p-2.5 rounded-xl border border-gray-100 dark:border-slate-800">
+                              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase mb-1 tracking-widest">{key}</p>
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate">{val}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2 flex-shrink-0">
-                        <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/update-requests/${req._id}/approve`); fetchUpdateReqs(); }} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
-                        <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/update-requests/${req._id}/reject`); fetchUpdateReqs(); }} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-black rounded-lg uppercase">Reject</button>
+                      <div className="flex md:flex-col gap-2 w-full md:w-auto">
+                        <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/update-requests/${req._id}/approve`); fetchUpdateReqs(); }} className="flex-1 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-green-600/20 transition-all active:scale-95">Approve</button>
+                        <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/update-requests/${req._id}/reject`); fetchUpdateReqs(); }} className="flex-1 px-6 py-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-black rounded-xl uppercase tracking-widest transition-all">Reject</button>
                       </div>
                     </div>
                   </div>
                 ))}
-                {updateRequests.filter(r => r.status === "Pending").length === 0 && <p className="text-gray-500 text-center py-10">No pending update requests.</p>}
+                {updateRequests.filter(r => r.status === "Pending").length === 0 && (
+                  <div className="premium-card text-center py-20">
+                    <CheckCircle className="mx-auto text-green-500 mb-4" size={40} />
+                    <p className="text-sm font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Verification queue empty</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* LEAVE REQUESTS VIEW */}
           {activeNav === "leaverequests" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest">Leave & Special Requests</h2>
-              </div>
-              <div className="space-y-3">
+            <div className="space-y-6">
+              <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest mb-4">Time-Off Verification</h2>
+              <div className="grid grid-cols-1 gap-4">
                 {leaveRequests.map((req) => (
-                  <div key={req._id} className={`bg-white rounded-xl border p-4 shadow-sm ${req.status === "Pending" ? "border-teal-200" : "border-gray-200"}`}>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-bold text-gray-800">{req.userName} <span className="text-xs font-normal text-gray-500">({req.userEmail})</span></p>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                            req.status === "Pending" ? "bg-amber-100 text-amber-700" :
-                            req.status === "Approved" ? "bg-green-100 text-green-700" :
-                            "bg-red-100 text-red-700"
+                  <div key={req._id} className={`premium-card !p-6 border-l-4 transition-all ${
+                    req.status === "Pending" ? "border-l-teal-500 bg-teal-50/5 dark:bg-teal-900/5 shadow-teal-500/5" : 
+                    req.status === "Approved" ? "border-l-green-500" : "border-l-red-500"
+                  }`}>
+                    <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${
+                            req.status === "Pending" ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                          }`}>
+                            {req.userName[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{req.userName}</p>
+                            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{req.userEmail}</p>
+                          </div>
+                          <span className={`ml-auto md:ml-0 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                            req.status === "Pending" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                            req.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                           }`}>{req.status}</span>
                         </div>
-                        <div className="mt-2 text-xs text-gray-700">
-                          <p className="font-bold text-teal-700">{req.requestType}</p>
-                          <p><span className="text-gray-500">Dates:</span> {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</p>
-                          <p className="mt-1"><span className="text-gray-500 block italic leading-relaxed bg-gray-50 p-2 rounded">"{req.reason}"</span></p>
+                        
+                        <div className="bg-white/50 dark:bg-slate-900/40 rounded-2xl p-4 border border-gray-100/50 dark:border-slate-800/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar size={14} className="text-teal-500" />
+                            <p className="text-xs font-black text-teal-700 dark:text-teal-400 uppercase tracking-widest">{req.requestType}</p>
+                          </div>
+                          <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-3 tabular-nums">
+                            {new Date(req.startDate).toLocaleDateString("en-GB")} — {new Date(req.endDate).toLocaleDateString("en-GB")}
+                          </p>
+                          <div className="relative">
+                            <Quote size={12} className="absolute -left-1 -top-1 text-gray-300 dark:text-gray-700" />
+                            <p className="pl-4 text-[11px] italic text-gray-600 dark:text-gray-400 leading-relaxed">"{req.reason}"</p>
+                          </div>
                         </div>
                       </div>
+                      
                       {req.status === "Pending" && (
-                        <div className="flex flex-col gap-2 flex-shrink-0">
-                          <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/approve`); fetchLeaveReqs(); }} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
-                          <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/reject`); fetchLeaveReqs(); }} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-black rounded-lg uppercase">Reject</button>
+                        <div className="flex md:flex-col gap-2 w-full md:w-auto">
+                          <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/approve`); fetchLeaveReqs(); }} className="flex-1 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-xl uppercase tracking-[0.1em] shadow-lg shadow-green-600/20 transition-all active:scale-95">Verify & Approve</button>
+                          <button onClick={async () => { await axios.put(`${API_BASE}/api/admin/leave-requests/${req._id}/reject`); fetchLeaveReqs(); }} className="flex-1 px-6 py-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-black rounded-xl uppercase tracking-widest transition-all">Decline</button>
                         </div>
                       )}
                     </div>
                   </div>
                 ))}
-                {leaveRequests.length === 0 && <p className="text-gray-500 text-center py-10">No leave requests found.</p>}
+                {leaveRequests.length === 0 && (
+                  <div className="premium-card text-center py-20">
+                    <CheckCircle className="mx-auto text-teal-500 mb-4" size={40} />
+                    <p className="text-sm font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">No leaves pending review</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* SETTINGS VIEW */}
           {activeNav === "settings" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[500px]">
-              <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6">System Settings</h2>
-              <div className="max-w-md space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Company Name</label>
-                  <input type="text" className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50" value="SecureTrack Inc." disabled />
+            <div className="premium-card min-h-[500px]">
+              <h2 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest mb-8">Global Environment Configuration</h2>
+              <div className="max-w-xl space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Platform Branding</label>
+                    <input type="text" className="w-full" value="SECURETRACK GLOBAL" disabled />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Alert Sensitivity</label>
+                    <input type="text" className="w-full" value="HIGH PARANOID" disabled />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Default Alert Timeout (mins)</label>
-                  <input type="number" className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50" value="5" disabled />
-                </div>
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm font-bold text-blue-800 mb-1">System is fully operational</p>
-                  <p className="text-xs text-blue-600">All services (Database, Auth, Tracking, Mail, Geofence) are running smoothly.</p>
+                
+                <div className="p-6 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-blue-900 dark:text-blue-300 uppercase tracking-tight">System Integrity Normal</h3>
+                      <p className="text-[10px] font-bold text-blue-600/70 dark:text-blue-400/70 uppercase">Architecture: Distributed Geofence Grid</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {['Database clusters', 'Email gateways', 'Tracking relays', 'OAuth providers'].map(svc => (
+                      <div key={svc} className="flex justify-between items-center text-[10px] font-black text-blue-800/60 dark:text-blue-400/60 uppercase">
+                        <span>{svc}</span>
+                        <span className="flex items-center gap-1"><span className="w-1 h-1 bg-blue-400 rounded-full" /> OPERATIONAL</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -693,35 +715,51 @@ const DashboardAdmin = () => {
 
       {/* GEOFENCE MODAL */}
       {showGeofenceModal && (
-        <div className="absolute inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowGeofenceModal(false)}></div>
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-96 relative z-10 animate-in fade-in zoom-in duration-200">
-            <button onClick={() => setShowGeofenceModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={16}/></button>
-            <h3 className="font-bold text-gray-800 mb-4">Add / Edit Geofence</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={() => setShowGeofenceModal(false)} />
+          <div className="relative premium-card w-full max-w-sm border-white/20 dark:border-slate-800/60 shadow-2xl z-10">
+            <button onClick={() => setShowGeofenceModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+              <X size={20}/>
+            </button>
+            <div className="mb-8">
+              <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                <span className="p-1 link bg-blue-100 dark:bg-blue-900/40 rounded-lg"><Shield size={20} className="text-blue-600 dark:text-blue-400" /></span>
+                Zone Config
+              </h3>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mt-1">Configure security perimeter</p>
+            </div>
+
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Zone Name</label>
-                <input type="text" value={editGeofence.name} onChange={e => setEditGeofence({...editGeofence, name: e.target.value})} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Zone Name</label>
+                <input type="text" value={editGeofence.name} onChange={e => setEditGeofence({...editGeofence, name: e.target.value})} placeholder="Main Office" className="w-full"/>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Latitude</label>
-                  <input type="number" step="0.0001" value={editGeofence.lat} onChange={e => setEditGeofence({...editGeofence, lat: parseFloat(e.target.value)})} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Latitude</label>
+                  <input type="number" step="0.0001" value={editGeofence.lat} onChange={e => setEditGeofence({...editGeofence, lat: parseFloat(e.target.value)})} className="w-full tabular-nums"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Longitude</label>
-                  <input type="number" step="0.0001" value={editGeofence.lng} onChange={e => setEditGeofence({...editGeofence, lng: parseFloat(e.target.value)})} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Longitude</label>
+                  <input type="number" step="0.0001" value={editGeofence.lng} onChange={e => setEditGeofence({...editGeofence, lng: parseFloat(e.target.value)})} className="w-full tabular-nums"/>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Radius (meters)</label>
-                <input type="number" value={editGeofence.radius} onChange={e => setEditGeofence({...editGeofence, radius: parseInt(e.target.value)})} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Radius (m)</label>
+                  <input type="number" value={editGeofence.radius} onChange={e => setEditGeofence({...editGeofence, radius: parseInt(e.target.value)})} className="w-full tabular-nums"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Visual Color</label>
+                  <input type="text" value={editGeofence.color} onChange={e => setEditGeofence({...editGeofence, color: e.target.value})} className="w-full font-mono uppercase"/>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Color (Hex)</label>
-                <input type="text" value={editGeofence.color} onChange={e => setEditGeofence({...editGeofence, color: e.target.value})} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
-              </div>
-              <button onClick={handleSaveGeofence} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-2 rounded-lg mt-2">Save Geofence</button>
+              <button 
+                onClick={handleSaveGeofence} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs py-3 rounded-xl mt-4 uppercase tracking-[0.2em] shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
+              >
+                Sync Perimeter
+              </button>
             </div>
           </div>
         </div>
