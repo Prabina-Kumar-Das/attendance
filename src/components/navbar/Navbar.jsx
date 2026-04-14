@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import LiveClock from '../common/LiveClock';
 import { Sun, Moon, ShieldCheck, LogOut } from 'lucide-react';
+import axios from 'axios';
+import API_BASE from '../../config/api';
 
 const Navbar = ({ title = "Patient Portal", user, onLogout }) => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -18,12 +20,13 @@ const Navbar = ({ title = "Patient Portal", user, onLogout }) => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await axios.post(`${API_BASE}/logout`); } catch (_) {}
+    localStorage.removeItem("user");
     if (onLogout) {
       onLogout();
     } else {
-      localStorage.removeItem("user");
-      window.location.href = "/";
+      window.location.href = "/login";
     }
   };
 

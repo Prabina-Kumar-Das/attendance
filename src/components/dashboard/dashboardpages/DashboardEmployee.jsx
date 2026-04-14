@@ -679,8 +679,12 @@ const DashboardEmployee = () => {
                 📅 Request Leave
               </button>
               <button
-                onClick={() => { localStorage.removeItem("user"); window.location.href = "/"; }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 dark:border-slate-800 text-xs font-black text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all uppercase tracking-widest"
+                onClick={async () => {
+                  try { await axios.post(`${API_BASE}/logout`); } catch (_) {}
+                  localStorage.removeItem("user");
+                  window.location.href = "/login";
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 dark:border-slate-800 text-xs font-black text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/10 hover:border-red-200 dark:hover:border-red-900/30 hover:text-red-500 dark:hover:text-red-400 transition-all uppercase tracking-widest"
               >
                 <LogOut size={13} /> Log Out
               </button>

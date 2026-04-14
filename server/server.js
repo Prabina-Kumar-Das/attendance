@@ -17,9 +17,58 @@ const leaveRequestModel = require("./models/leaveRequestSchema")
 const sendBreachAlertEmail = require("./services/breachmailservice")
 const cors = require("cors")
 const compression = require("compression")
+// ─── Security Packages ─────────────────────────────────────────────────────────
+const helmet = require("helmet")
+const rateLimit = require("express-rate-limit")
+const mongoSanitize = require("express-mongo-sanitize")
+const cookieParser = require("cookie-parser")
+const jwt = require("jsonwebtoken")
+const authMiddleware = require("./middleware/auth")
 const app = express()
+
+// ─── Security Middleware ────────────────────────────────────────────────────────
+// 1. Helmet — sets 15+ secure HTTP headers (XSS, clickjacking, MIME sniffing, etc.)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },  // allow map tiles & images
+  contentSecurityPolicy: false,                            // disable for React SPA compatibility
+}))
+
+// 2. Global rate limiter — 200 requests per 15 min per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please slow down." },
+})
+app.use(globalLimiter)
+
+// Specific limiters for sensitive auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many attempts. Please wait 15 minutes before trying again." },
+})
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { message: "Too many registration attempts from this IP." },
+})
+const breachLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: "Too many breach triggers." },
+})
+
 app.use(compression()) // gzip all responses
-app.use(express.json())
+app.use(express.json({ limit: '10kb' }))  // limit body size to 10KB
+
+// 3. NoSQL injection sanitization — strips $ and . from req.body/query/params
+app.use(mongoSanitize())
+
+// 4. Cookie parser — needed to read httpOnly JWT cookies
+app.use(cookieParser())
+
 app.use(cors({
   origin: [
     "https://attendance-mocha-omega.vercel.app",
@@ -29,14 +78,15 @@ app.use(cors({
   credentials: true
 }))
 
-
+// 5. Protect ALL /api/admin/* routes with JWT cookie auth
+app.use("/api/admin", authMiddleware)
 
 connectDB()
 
 // Health check for Render
 app.get("/", (req, res) => res.status(200).json({ status: "ok" }));
 
-app.post("/register", async (req, res) => {
+app.post("/register", registerLimiter, async (req, res) => {
 
   const employee = req.body
   try {
@@ -59,19 +109,52 @@ app.post("/register", async (req, res) => {
 })
 
 
-app.post("/login", async (req, res) => {
+app.post("/login", authLimiter, async (req, res) => {
   const {email, password} = req.body
   try {
     const employee = await allEmployeeModel.findOne({email})
     if(!employee) {
       return res.status(404).json({message: "Email not Registered!"})
     }
+
+    // ── Account Lockout Check ────────────────────────────────────────────────
+    if (employee.lockUntil && employee.lockUntil > new Date()) {
+      const remaining = Math.ceil((employee.lockUntil - new Date()) / 60000);
+      return res.status(423).json({
+        message: `Account locked due to too many failed attempts. Try again in ${remaining} minute(s).`
+      });
+    }
+
     const match = await bcrypt.compare(password, employee.password)
     if(!match) {
-      return res.status(401).json({message: "Incorrrect Password"})
+      // Increment failed attempts
+      const newAttempts = (employee.failedLoginAttempts || 0) + 1;
+      const updateFields = { failedLoginAttempts: newAttempts };
+
+      if (newAttempts >= 5) {
+        // Lock the account for 15 minutes
+        updateFields.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        updateFields.failedLoginAttempts = 0;
+        await allEmployeeModel.findByIdAndUpdate(employee._id, { $set: updateFields });
+        return res.status(423).json({
+          message: "Account locked for 15 minutes due to 5 failed login attempts."
+        });
+      }
+
+      await allEmployeeModel.findByIdAndUpdate(employee._id, { $set: updateFields });
+      const attemptsLeft = 5 - newAttempts;
+      return res.status(401).json({
+        message: `Incorrect password. ${attemptsLeft} attempt(s) remaining before account lockout.`
+      })
     }
-    const OTP = String(otpService());
+
+    // ── Success — reset lockout counters ─────────────────────────────────────
+    await allEmployeeModel.findByIdAndUpdate(employee._id, {
+      $set: { failedLoginAttempts: 0, lockUntil: null }
+    });
     console.log(employee.name);
+
+    const OTP = String(otpService());
 
     if(!OTP) {
       return res.status(500).json({message: "Failed to send OTP"})
@@ -85,15 +168,13 @@ app.post("/login", async (req, res) => {
 
     res.status(200).json({message: "OTP send Sucessfully."})
 
-    
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({message: "Internal Server Error."})
   }
 })
 
-app.post("/verify-otp", async (req, res) => {
+app.post("/verify-otp", authLimiter, async (req, res) => {
   const {email, otp} = req.body;
 
   try {
@@ -115,6 +196,20 @@ app.post("/verify-otp", async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP. Please try again." })
     }
 
+    // ── Sign JWT and set httpOnly secure cookie ───────────────────────────────
+    const token = jwt.sign(
+      { userId: employee._id, email: employee.email, role: employee.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,   // JS cannot read this cookie — XSS safe
+      secure: true,     // HTTPS only (required for SameSite:none)
+      sameSite: "none", // cross-origin: Vercel → Render
+      maxAge: 8 * 60 * 60 * 1000, // 8 hours in ms
+    });
+
     return res.status(200).json({ 
       message: "Login Successful!",
       user: {
@@ -129,6 +224,16 @@ app.post("/verify-otp", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 })
+
+// ─── Logout — clears the httpOnly JWT cookie ──────────────────────────────────
+app.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+});
 app.get("/employees", async (req, res) => {
   try {
     const employees = await allEmployeeModel.find({}).select("-password"); // do not send passwords
@@ -216,8 +321,8 @@ app.post("/api/location", async (req, res) => {
   }
 });
 
-// 2. Trigger breach & send OTP
-app.post("/api/breach-trigger", async (req, res) => {
+// ─── Breach Protection (rate-limited) ───────────────────────────────────────
+app.post("/api/breach-trigger", breachLimiter, async (req, res) => {
   try {
     const { email, lat, lng } = req.body;
     if (!email) return res.status(400).json({message: "Email required"});
@@ -476,8 +581,8 @@ app.delete("/api/admin/geofences/:id", async (req, res) => {
   }
 });
 
-// 8. Delete employee
-app.delete("/api/employees/:id", async (req, res) => {
+// ─── Admin-only: Employee delete ─────────────────────────────────────────────
+app.delete("/api/employees/:id", authMiddleware, async (req, res) => {
   try {
     const emp = await allEmployeeModel.findByIdAndDelete(req.params.id);
     if (!emp) return res.status(404).json({ message: "Employee not found" });
