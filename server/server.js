@@ -26,6 +26,11 @@ const jwt = require("jsonwebtoken")
 const authMiddleware = require("./middleware/auth")
 const app = express()
 
+// REQUIRED for Render/Heroku/any reverse proxy
+// Without this, express-rate-limit crashes because Render adds X-Forwarded-For headers
+// but Express doesn't know to trust them — causing a validation mismatch on every request
+app.set('trust proxy', 1)
+
 // ─── Security Middleware ────────────────────────────────────────────────────────
 // 1. Helmet — sets 15+ secure HTTP headers (XSS, clickjacking, MIME sniffing, etc.)
 app.use(helmet({
@@ -39,6 +44,7 @@ const globalLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }, // disable proxy validation — handled via trust proxy above
   message: { message: "Too many requests. Please slow down." },
 })
 app.use(globalLimiter)
