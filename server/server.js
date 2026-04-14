@@ -69,8 +69,14 @@ const breachLimiter = rateLimit({
 app.use(compression()) // gzip all responses
 app.use(express.json({ limit: '10kb' }))  // limit body size to 10KB
 
-// 3. NoSQL injection sanitization — strips $ and . from req.body/query/params
-app.use(mongoSanitize())
+// 3. NoSQL injection sanitization — strips $ and .
+// Custom middleware used instead of app.use(mongoSanitize()) because Express 5 makes req.query read-only
+app.use((req, res, next) => {
+  if (req.body) req.body = mongoSanitize.sanitize(req.body);
+  if (req.params) req.params = mongoSanitize.sanitize(req.params);
+  // Skip req.query to prevent Express 5 crashing
+  next();
+});
 
 // 4. Cookie parser — needed to read httpOnly JWT cookies
 app.use(cookieParser())
