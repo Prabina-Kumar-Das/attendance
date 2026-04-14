@@ -144,9 +144,6 @@ const RegistrationPage = () => {
                   onChange={handleChange}
                 >
                   <option value="" disabled>Select Role</option>
-                  <optgroup label="── Administrator ──">
-                    <option value="admin">Admin</option>
-                  </optgroup>
                   <optgroup label="── Employee Roles ──">
                     <option value="developer">Developer</option>
                     <option value="manager">Manager</option>

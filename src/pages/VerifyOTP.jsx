@@ -6,10 +6,10 @@ import API_BASE from '../config/api';
 const VerifyOTP = () => {
   const [otp, setOtp] = useState("");
   const [isError, setIsError] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
-
-  const location = useLocation()
-
+  const location = useLocation();
   const email = location.state?.email;
 
   const handleChange = (e) => {
@@ -21,6 +21,14 @@ const VerifyOTP = () => {
   };
 
   const handleVerify = async () => {
+    if (otp.length < 4) {
+      setIsError(true);
+      setErrorMsg("Please enter the 4-digit OTP.");
+      return;
+    }
+    setIsVerifying(true);
+    setIsError(false);
+    setErrorMsg("");
     try {
       const response = await axios.post(`${API_BASE}/verify-otp`, {
         email: email,
@@ -37,7 +45,9 @@ const VerifyOTP = () => {
 
     } catch (error) {
       setIsError(true);
-      console.log(error.response?.data?.message || "Invalid OTP");
+      setErrorMsg(error.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -73,15 +83,24 @@ const VerifyOTP = () => {
           </div>
         </div>
 
+        {/* Error message */}
+        {isError && errorMsg && (
+          <p className="text-xs text-red-500 mb-3 font-medium">{errorMsg}</p>
+        )}
+
         <button
           onClick={handleVerify}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition-all active:scale-95"
+          disabled={isVerifying}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl shadow-md transition-all active:scale-95"
         >
-          Verify Code
+          {isVerifying ? "Verifying..." : "Verify Code"}
         </button>
 
-        <button className="mt-4 text-xs font-medium text-gray-400 hover:text-indigo-600 transition-colors">
-          Resend Code
+        <button
+          onClick={() => navigate('/login')}
+          className="mt-4 text-xs font-medium text-gray-400 hover:text-indigo-600 transition-colors"
+        >
+          ↩ Didn't receive code? Go back &amp; resend
         </button>
       </div>
     </div>

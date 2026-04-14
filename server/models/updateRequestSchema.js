@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const updateRequestSchema = new mongoose.Schema(
   {
-    userId:      { type: mongoose.Schema.Types.ObjectId, ref: "employees", required: true },
-    userName:    { type: String },
-    userEmail:   { type: String },
+    userId:    { type: mongoose.Schema.Types.ObjectId, ref: "employees", required: true },
+    userName:  { type: String, required: true },
+    userEmail: { type: String, required: true },
     requestedData: {
       name:       { type: String },
       email:      { type: String },

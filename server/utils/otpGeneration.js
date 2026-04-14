@@ -1,6 +1,8 @@
-const otpService = () => {
-  const OTP = Math.floor(1000 + Math.random() * 9000);
-  return OTP
-}
+const { randomInt } = require("crypto");
 
-module.exports = otpService
+// Use cryptographically secure random integer (Node.js built-in)
+const otpService = () => {
+  return randomInt(1000, 10000); // 4-digit OTP: 1000–9999
+};
+
+module.exports = otpService;

@@ -20,9 +20,14 @@ const compression = require("compression")
 const app = express()
 app.use(compression()) // gzip all responses
 app.use(express.json())
-app.use(cors({ origin: "*" }))
-
-console.log(process.env.APP_EMAIL);
+app.use(cors({
+  origin: [
+    "https://attendance-mocha-omega.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:4173"
+  ],
+  credentials: true
+}))
 
 
 
@@ -239,7 +244,7 @@ app.post("/api/breach-trigger", async (req, res) => {
     
     // Hash and store OTP
     const hashedOTP = await bcrypt.hash(OTP, 6);
-    await otpModel.insertOne({ otp: hashedOTP, userId: employee._id });
+    await otpModel.create({ otp: hashedOTP, userId: employee._id });
 
     // Send dedicated breach security alert email with GPS location & OTP
     sendBreachAlertEmail(email, employee.name, OTP, lat || 0, lng || 0).catch(console.error);
