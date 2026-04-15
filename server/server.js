@@ -107,16 +107,31 @@ app.post("/register", registerLimiter, async (req, res) => {
     if(!isvalid) {
       return res.status(401).json({message: " at least one lowercase letter is present in the string and at least one uppercase letter is present. and  at least one digit (0-9) is present. and at least one special character from the specified set is present. and  minimum length of 8 characters"})
     }
-    const hashedPassword = await bcrypt.hash(employee.password, 6)
+    const hashedPassword = await bcrypt.hash(employee.password, parseInt(process.env.SALT_ROUNDS) || 10)
 
-    const data = await allEmployeeModel.create({ ...employee, password: hashedPassword });
-    res.status(201).json({message: "Account  Created"})
-    console.log(data);
-    sendMailServices(employee.email, "Registration Sucessfully", employee.name).catch(console.error);
-    
+    // ── KEY FIX: frontend sends `employeeId` (lowercase e) but schema requires `EmployeeId` (capital E)
+    // Spreading req.body directly caused a Mongoose "EmployeeId is required" validation error every time
+    const data = await allEmployeeModel.create({
+      name:       employee.name,
+      email:      employee.email,
+      password:   hashedPassword,
+      EmployeeId: employee.employeeId,  // map the field name correctly
+      role:       employee.role,
+    });
+
+    console.log("New employee registered:", data.name, "| Role:", data.role);
+    res.status(201).json({ message: "Account Created" });
+    sendMailServices(employee.email, "Registration Successfully", employee.name).catch(console.error);
+
   } catch (error) {
-    res.status(500).json({message: "Internal Server Error"})
-    console.log(error);
+    console.log("Registration error:", error.message);
+    if (!res.headersSent) {
+      if (error.code === 11000) {
+        // MongoDB duplicate key — email already exists
+        return res.status(409).json({ message: "This email is already registered. Please log in instead." });
+      }
+      res.status(500).json({ message: "Registration failed: " + error.message });
+    }
   }
 })
 
